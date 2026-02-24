@@ -1,2 +1,3 @@
 # BIMM143_github
-My class work for BIMM143
+My classwork for BIMM143 aat UCSD
+
