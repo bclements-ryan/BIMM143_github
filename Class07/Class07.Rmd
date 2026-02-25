@@ -1,0 +1,293 @@
+---
+title: "Class07MachineLearning1"
+author: "Brooke Clements (PID: A17532793)"
+output: pdf_document
+date: "January 27th, 2025"
+---
+
+#First up kmeans()
+
+Deom of using kmeans() function in base R. First make up some data with a known structure. 
+
+```{r}
+tmp <- c(rnorm(30,-3), rnorm(30,3))
+x <- cbind(x=tmp,y=rev(tmp))
+x
+plot(x)
+```
+
+Now we have some made up data in `x` let's see how kmeans works with this data
+
+```{r}
+k <- kmeans(x,centers=2, nstart=20)
+k
+```
+
+> Q. How many points are in cluster? 
+
+```{r}
+k$size
+```
+> Q. How do we get to the cluster membership/assignment?
+
+```{r}
+k$cluster
+```
+
+> Q. What about cluster centers? 
+
+```{r}
+k$centers
+```
+
+Now we got to the main results let's use them to plot our data with the kmeans results. 
+
+```{r}
+plot(x, col=k$cluster)
+points(k$centers, col="blue", pch=15)
+```
+
+
+## Now for Hierarchical Clustering
+
+We will cluster the same data`x` with the `hclust()`. In this case `hclust()` requires a distance matrix as input. 
+
+```{r}
+hc <- hclust(dist(x))
+hc
+```
+
+Let's plot our hclust result
+
+```{r}
+plot(hc)
+```
+
+To get cluster membership vector we need to "cut" the tree with the `cutree()`
+
+```{r}
+grps <- cutree(hc, h=8)
+grps
+```
+
+Now plot our data with hclust() results. 
+
+```{r}
+plot(x, col=grps)
+```
+
+
+# Principal Component Analysis (PCA)
+
+## PCA of UK food data
+
+Read data from website and try a few visualizations. 
+
+```{r}
+url <- "https://tinyurl.com/UK-foods"
+x <- read.csv(url, row.names=1)
+x
+```
+> Q1. How many rows and columns are in your new data frame named x? What R functions could you use to answer this questions?
+
+```{r}
+dim(x)
+```
+Preview the first 6 rows
+
+```{r}
+head(x)
+```
+>Q2. Which approach to solving the ‘row-names problem’ mentioned above do you prefer and why? Is one approach more robust than another under certain circumstances?
+
+I prefer `read.csv(url, row.names=1)`because it sets it up from the begining and it not forgoten later.
+
+> Q3: Changing what optional argument in the above barplot() function results in the following plot?
+
+```{r}
+cols <- rainbow(nrow(x))
+barplot(as.matrix(x),col=cols)
+```
+
+```{r}
+barplot(as.matrix(x),col=cols, beside = TRUE)
+```
+## Using ggplot and the need for “tidy” data (Optional)
+ Convert data to long format for ggplot with `pivot_longer()`
+
+```{r}
+library(tidyr)
+
+x_long <- x |> 
+          tibble::rownames_to_column("Food") |> 
+          pivot_longer(cols = -Food, 
+                       names_to = "Country", 
+                       values_to = "Consumption")
+
+dim(x_long)
+```
+
+```{r}
+head(x_long)
+```
+
+# Create grouped bar plot
+
+```{r}
+library(ggplot2)
+ggplot(x_long) +
+  aes(x = Country, y = Consumption, fill = Food) +
+  geom_col(position = "dodge") +
+  theme_bw()
+```
+
+> Q4: Changing what optional argument in the above ggplot() code results in a stacked barplot figure?
+
+```{r}
+ggplot(x_long) +
+  aes(x = Country, y = Consumption, fill = Food) +
+  geom_col(position = "stack") +
+  theme_bw()
+```
+
+> Q5: We can use the pairs() function to generate all pairwise plots for our countries. Can you make sense of the following code and resulting figure? What does it mean if a given point lies on the diagonal for a given plot?
+
+```{r}
+pairs(x, col=cols)
+```
+
+```{r}
+library(pheatmap)
+url <- "https://tinyurl.com/UK-foods"
+x <- read.csv(url, row.names=1)
+pheatmap(as.matrix(x))
+```
+
+>Q6. Based on the pairs and heatmap figures, which countries cluster together and what does this suggest about their food consumption patterns? Can you easily tell what the main differences between N. Ireland and the other countries of the UK in terms of this data-set?
+
+Scotland, England, and Wales cluster together while N. Ireland. This suggest that Scotland, England, and Wales have similar food consumption patterns. We can easily tell that N. Ireland is different based on how the other counties have similar color palletes. 
+
+PCA to the rescue!!
+The main base R PCA function is called`prcomp()` and we will need to give it the transpose of our input data!
+
+```{r}
+pca <- prcomp(t(x))
+```
+
+There is a nice summary of how well PCA is doing
+```{r}
+summary(pca)
+```
+
+
+```{r}
+attributes(pca)
+```
+
+>Q7. Complete the code below to generate a plot of PC1 vs PC2. The second line adds text labels over the data points.
+
+To make our new PCA plot (a.k.a PCA score plot)we acces `pca$x`
+
+#Create a data frame for plotting
+```{r}
+df <- as.data.frame(pca$x)
+df$Country <- rownames(df)
+```
+#Plot PC1 vs PC2 with ggplot
+```{r}
+ggplot(pca$x) +
+  aes(x = PC1, y = PC2, label = rownames(pca$x)) +
+  geom_point(size = 3) +
+  geom_text(vjust = -0.5) +
+  xlim(-270, 500) +
+  xlab("PC1") +
+  ylab("PC2") +
+  theme_bw()
+
+```
+
+>Q8. Customize your plot so that the colors of the country names match the colors in our UK and Ireland map and table at start of this document.
+
+Color up the plot
+
+```{r}
+country_cols <- c("orange","red","blue","green")
+plot(pca$x[,1],pca$x[,2],xlab="pc1",ylab="pc2")
+text(pca$x[,1],pca$x[,2], colnames(x), col=country_cols)
+```
+
+Here we can caculate how much variation is in the original data that each PC accounts for
+```{r}
+v <- round( pca$sdev^2/sum(pca$sdev^2) * 100 )
+v
+```
+#Create scree plot with ggplot
+```{r}
+variance_df <- data.frame(
+  PC = factor(paste0("PC", 1:length(v)), levels = paste0("PC", 1:length(v))),
+  Variance = v
+)
+
+ggplot(variance_df) +
+  aes(x = PC, y = Variance) +
+  geom_col(fill = "steelblue") +
+  xlab("Principal Component") +
+  ylab("Percent Variation") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 0))
+```
+
+## Digging deeper (variable loadings)
+
+Lets focus on PC1 as it accounts for > 90% of variance
+
+```{r}
+ggplot(pca$rotation) +
+  aes(x = PC1, 
+      y = reorder(rownames(pca$rotation), PC1)) +
+  geom_col(fill = "steelblue") +
+  xlab("PC1 Loading Score") +
+  ylab("") +
+  theme_bw() +
+  theme(axis.text.y = element_text(size = 9))
+```
+
+> Q9: Generate a similar ‘loadings plot’ for PC2. What two food groups feature prominantely and what does PC2 maninly tell us about?
+
+```{r}
+ggplot(pca$rotation) +
+  aes(x = PC2, 
+      y = reorder(rownames(pca$rotation), PC2)) +
+  geom_col(fill = "steelblue") +
+  xlab("PC2 Loading Score") +
+  ylab("") +
+  theme_bw() +
+  theme(axis.text.y = element_text(size = 9))
+```
+Here we see that fresh potatoes and soft drinks are the two groups that are feature prominently. This tells us that in PC2 more soft drinks are consumed when compared to potatoes. 
+
+## PCA of RNA-seq data
+
+Read in data from website
+```{r}
+url2 <- "https://tinyurl.com/expression-CSV"
+rna.data <- read.csv(url2, row.names=1)
+head(rna.data)
+```
+
+```{r}
+pca <- prcomp(t(rna.data))
+summary(pca)
+```
+
+Do our PCA plot of this RNA-seq data
+
+```{r}
+plot(pca$x[,1], pca$x[,2], xlab="PC1", ylab="PC2")
+```
+
+```{r}
+plot(pca$x[,1], pca$x[,2], xlab="PC1", ylab="PC2")
+text(pca$x[,1], pca$x[,2], colnames(rna.data))
+```
+
