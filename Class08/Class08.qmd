@@ -1,0 +1,181 @@
+---
+title: "Class08"
+author: "Brooke Clements"
+format: pdf
+---
+
+## Background
+
+In todays class we will apply the methods and techniques clustering and PCA to help make sense of real world breast cancer FNA biopsy data set. 
+
+## Data import
+
+We start by importing our data. It is a CSV file so we will use the `read.csv()` function. 
+
+
+```{r}
+fna.data <- "https://bioboot.github.io/bimm143_S20/class-material/WisconsinCancer.csv"
+```
+
+```{r}
+wisc.df <-read.csv(fna.data,row.name=1)
+```
+
+```{r}
+View(wisc.df)
+```
+Have a peak at the first few entries. 
+```{r}
+head(wisc.df, 4)
+```
+Make sure to remove the first `diagmosis` column - I don'y want to use this for my machine learning models. We will use it later to compare our resutlts to the expert diagnois. 
+```{r}
+wisc.data <- wisc.df[,-1]
+diagnosis <- wisc.df$diagnosis
+```
+ 
+
+>Q1. How many observations are in this dataset?
+```{r}
+nrow(wisc.df)
+```
+ 
+>Q2. How many of the observations have a malignant diagnosis?
+```{r}
+table(wisc.df$diagnosis)
+```
+
+>Q3. How many variables/features in the data are suffixed with _mean?
+```{r}
+# colnames(wisc.data)
+length(grep("_mean", colnames(wisc.data)))
+```
+
+## Principal Component Analysis
+
+The main function here is `prcomp()` and we want to make sure we set the optional argument `scale=TRUE`
+```{r}
+wisc.pr <- prcomp(wisc.data, scale=TRUE)
+summary(wisc.pr)
+```
+>Q4. From your results, what proportion of the original variance is captured by the first principal component (PC1)?
+
+0.4427
+
+>Q5. How many principal components (PCs) are required to describe at least 70% of the original variance in the data?
+
+We need 3 PCs to describe 72.636% of the original variance in the data. 
+
+>Q6. How many principal components (PCs) are required to describe at least 90% of the original variance in the data?
+
+We need 7 PCs to describe 91.01% of the original variance in the data. 
+
+```{r}
+biplot(wisc.pr)
+```
+
+
+>Q7. What stands out to you about this plot? Is it easy or difficult to understand? Why?
+
+The first thing that stands out about this grapg is how overwhelming it is. This graph is difficult to understand due to all the overlaping data points. 
+
+Our main PCS score plot or "PC plot" of results: 
+```{r}
+library(ggplot2)
+```
+```{r}
+ggplot(wisc.pr$x) + 
+  aes(PC1,PC2, col=diagnosis)+
+  geom_point()
+```
+
+>Q8. Generate a similar plot for principal components 1 and 3. What do you notice about these plots?
+
+Componemts 1 and 2 have a more clear seperation that 1 and 3. 
+
+```{r}
+ggplot(wisc.pr$x) + 
+  aes(PC1,PC3, col=diagnosis)+
+  geom_point()
+```
+#Calculate variance of each component
+```{r}
+pr.var <- wisc.pr$sdev^2
+head(pr.var)
+```
+#Variance explained by each principal component: pve
+```{r}
+pve <- pr.var/30
+plot(c(1,pve),xlab="Principal Component", ylab="proportion of variance Explained", ylim=c(0,1), type="o")
+```
+
+#Alternative scree plot of the same data, note data driven y-axis
+
+```{r}
+barplot(pve,ylab="Percent of Variance Explained", 
+        names.arg=paste0("PC",1:length(pve)), las=2, axes=FALSE) +
+axis(2, at=pve, labels=round(pve,2)*100 )
+
+```
+
+
+```
+
+
+If cells in the nucleus are deeply indented ("concave"), irregular non circular ("compactancness"), and have large "perimeter" values they tend to be mlignamt...
+
+>Q9. For the first principal component, what is the component of the loading vector (i.e. wisc.pr$rotation[,1]) for the feature concave.points_mean? This tells us how much this original feature contributes to the first PC. Are there any features with larger contributions than this one?
+
+```{r}
+wisc.pr$rotation["concave.points_mean",1]
+```
+
+
+##Hierarchical Clustering
+ First scale the data (with the `scale()`) function , then caculate a distance matrix (with the `dist()`function). Then cluster `hclust()` function and plot:
+
+```{r}
+wisc.hclust <- hclust(dist(scale(wisc.data)))
+```
+
+>Q10. Using the plot() and abline() functions, what is the height at which the clustering model has 4 clusters?
+
+```{r}
+plot(wisc.hclust)+
+abline(h=19, col="red", lty=2)
+```
+
+
+```{r}
+wisc.hclust.cluster <- cutree(wisc.hclust, k=4)
+table(wisc.hclust.cluster, diagnosis)
+```
+## Combinging methods
+
+Here we will take our PCA results and use those as inputs for clusintering. In other words our `wisc.pr$x` scores that we plotted above (the main output from PCA - how the data lie on our new principal componet axis / variables) and use a subset of these PCs that capture the most variance as input for `hclust()`
+
+```{r}
+pc.dist <- dist(wisc.pr$x[,1:3])
+wisc.pr.hclust <- hclust(pc.dist, method="ward.D2")
+plot(wisc.pr.hclust)
+```
+
+Cut the dendrogram/tree into two main groups/clusters: 
+
+```{r}
+grps <- cutree(wisc.pr.hclust, k=2)
+table(grps)
+```
+I want to know how the clustering in `grps` with values of 1 or 2 correspond the expert `diagnosis`
+
+```{r}
+table(grps, diagnosis)
+```
+My clustering **groups 1** are mostly "M" diagnosis (179) and my clustering **group 2** are mostly "B" diagnosis. 
+
+
+
+
+
+
+
