@@ -1,0 +1,28 @@
+---
+title: "Class19"
+author: "Brooke Clements"
+format: html
+---
+```{r}
+library(bio3d)
+```
+
+
+
+```{r}
+aln <- read.fasta("~/Downloads/A17532793_mutant_seq.fa")
+aln
+```
+
+```{r}
+mutant <- which(conserv(aln)<1)
+mutant
+```
+
+```{r}
+aln$ali[1,mutant]
+paste(aln)
+```
+
+
+

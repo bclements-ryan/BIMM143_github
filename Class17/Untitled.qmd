@@ -1,0 +1,19 @@
+---
+title: "Class17"
+author: "Brooke Clements (PID:17532793)"
+format: html
+---
+
+## Downstream analysis
+
+```{r}
+library(tximport)
+
+folders <- dir(pattern="SRR21568*")
+samples <- sub("_quant","",folders)
+files <- file.path( folders, "abundance.h5")
+names(files) <- samples
+
+```
+
+
