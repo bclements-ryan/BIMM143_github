@@ -86,16 +86,16 @@ head(pdb$atom)
 ```
 
 ```{r}
-##library(bio3dview)
+library(bio3dview)
 
-##view.pdb(pdb)
+view.pdb(pdb)
 ```
 
 ```{r}
-library(bio3d)
+library(bio3dview)
 library(NGLVieweR)
 
-NGLVieweR("model.pdb") |>
+view.pdb(pdb) |>
   setSpin()
 ```
 
@@ -104,10 +104,10 @@ NGLVieweR("model.pdb") |>
 sele <- atom.select(pdb, resno=25)
 
 # and highlight them in spacefill representation
-##NGLVieweR(pdb, cols=c("navy","teal"), 
-        # highlight = sele,
-         #highlight.style = "spacefill") |>
- # setRock()
+view.pdb(pdb, cols=c("navy","teal"), 
+         highlight = sele,
+         highlight.style = "spacefill") |>
+  setRock()
 ```
 
 
