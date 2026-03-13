@@ -5,7 +5,7 @@ My classwork for [BIMM143](https://bioboot.github.io/bimm143_W26/) at UC San Die
 
 *Introductory material*
 
-- Class 05 [Data Viz with ggplot](Class05/Class05.md)
+- Class 05 [Data Viz with ggplot](Class05/Class05.html)
 - Class 06 [R functions and R packages from CRAN and BioConductor](Class06/Class06.md)
 - Class 07 [ Introduction to machine learning for Bioinformatics](Class07/Class07.md)
 - Class 08 [Unsupervised Learning Analysis of Human Breast Cancer Cells](Class08/Class08.md)
